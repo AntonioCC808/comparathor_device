@@ -13,7 +13,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           SvgPicture.asset(
-            'assets/images/logo.svg',
+            'assets/images/app-logo.svg',
             height: 40.0,
             semanticsLabel: 'App Logo',
           ),
