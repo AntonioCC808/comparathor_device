@@ -53,7 +53,7 @@ class ComparathorApp extends StatelessWidget {
           prefixIconColor: Colors.indigo,
         ),
       ),
-      initialRoute: '/',
+      initialRoute: '/signin',
       routes: {
         '/': (context) => MainDashboard(),
         '/signin': (context) => SignInScreen(),
