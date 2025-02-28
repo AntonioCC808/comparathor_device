@@ -6,7 +6,7 @@ import 'package:dio/dio.dart';
 class ComparisonDetailScreen extends ConsumerStatefulWidget {
   final int comparisonId;
 
-  ComparisonDetailScreen({required this.comparisonId});
+  const ComparisonDetailScreen({super.key, required this.comparisonId});
 
   @override
   _ComparisonDetailScreenState createState() => _ComparisonDetailScreenState();
@@ -84,7 +84,7 @@ class _ComparisonDetailScreenState
                         scrollDirection: Axis.horizontal,
                         child: DataTable(
                           columnSpacing: 20,
-                          headingRowColor: MaterialStateColor.resolveWith(
+                          headingRowColor: WidgetStateColor.resolveWith(
                               (states) => Colors.blueGrey[100]!),
                           dataRowHeight: 60,
                           columns: [

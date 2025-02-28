@@ -8,6 +8,8 @@ import 'package:comparathor_device/views/comparison/select_products_screen.dart'
 import 'package:comparathor_device/core/api_service.dart';
 
 class ProductListScreen extends ConsumerStatefulWidget {
+  const ProductListScreen({super.key});
+
   @override
   _ProductListScreenState createState() => _ProductListScreenState();
 }
@@ -20,16 +22,16 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
     bool confirmDelete = await showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text("Delete Product"),
-        content: Text("Are you sure you want to delete this product?"),
+        title: const Text("Delete Product"),
+        content: const Text("Are you sure you want to delete this product?"),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: Text("Cancel"),
+            child: const Text("Cancel"),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: Text("Delete", style: TextStyle(color: Colors.red)),
+            child: const Text("Delete", style: TextStyle(color: Colors.red)),
           ),
         ],
       ),
@@ -38,33 +40,34 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
     if (confirmDelete) {
       try {
         await apiService.deleteProduct(productId);
-        ref.refresh(productProvider);
+        ref.invalidate(productProvider);
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Failed to delete product")),
+          const SnackBar(content: Text("Failed to delete product")),
         );
       }
     }
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final productAsyncValue = ref.watch(productProvider);
 
     return Scaffold(
       appBar: AppBar(
-        title: Text("Products"),
+        title: const Text("Products"),
         actions: [
           IconButton(
-            icon: Icon(Icons.add),
+            icon: const Icon(Icons.add),
             onPressed: () async {
               final result = await Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => AddProductScreen()),
+                MaterialPageRoute(
+                    builder: (context) => const AddProductScreen()),
               );
 
               if (result != null) {
-                ref.refresh(productProvider);
+                ref.invalidate(productProvider);
               }
             },
           ),
@@ -99,7 +102,7 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
                           },
                         ),
                         IconButton(
-                          icon: Icon(Icons.edit, color: Colors.blue),
+                          icon: const Icon(Icons.edit, color: Colors.blue),
                           onPressed: () async {
                             final result = await Navigator.push(
                               context,
@@ -112,12 +115,12 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
                             );
 
                             if (result == true) {
-                              ref.refresh(productProvider);
+                              ref.invalidate(productProvider);
                             }
                           },
                         ),
                         IconButton(
-                          icon: Icon(Icons.delete, color: Colors.red),
+                          icon: const Icon(Icons.delete, color: Colors.red),
                           onPressed: () =>
                               deleteProduct(context, ref, product["id"]),
                         ),
@@ -150,17 +153,18 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
                     );
 
                     if (result == true) {
-                      ref.refresh(productProvider);
+                      ref.invalidate(productProvider);
                     }
                   },
-                  icon: Icon(Icons.compare),
-                  label: Text("Compare Selected Products"),
+                  icon: const Icon(Icons.compare),
+                  label: const Text("Compare Selected Products"),
                 ),
               ),
           ],
         ),
-        loading: () => Center(child: CircularProgressIndicator()),
-        error: (error, stack) => Center(child: Text("Failed to load products")),
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (error, stack) =>
+            const Center(child: Text("Failed to load products")),
       ),
     );
   }

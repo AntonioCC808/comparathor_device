@@ -4,6 +4,8 @@ import 'package:comparathor_device/core/api_service.dart';
 import 'package:dio/dio.dart';
 
 class LoginScreen extends StatefulWidget {
+  const LoginScreen({super.key});
+
   @override
   LoginScreenState createState() => LoginScreenState();
 }
@@ -35,9 +37,13 @@ class LoginScreenState extends State<LoginScreen> {
       await apiService.saveToken(token);
 
       Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (context) => HomeScreen()),
-    );
+        context,
+        MaterialPageRoute(builder: (context) => HomeScreen()),
+      );
+    } catch (e) {
+      setState(() {
+        errorMessage = "Login failed. Please try again.";
+      });
     }
 
     setState(() {
@@ -60,13 +66,15 @@ class LoginScreenState extends State<LoginScreen> {
               TextFormField(
                 controller: emailController,
                 decoration: InputDecoration(labelText: "Email"),
-                validator: (value) => value!.isEmpty ? "Enter your email" : null,
+                validator: (value) =>
+                    value!.isEmpty ? "Enter your email" : null,
               ),
               TextFormField(
                 controller: passwordController,
                 decoration: InputDecoration(labelText: "Password"),
                 obscureText: true,
-                validator: (value) => value!.isEmpty ? "Enter your password" : null,
+                validator: (value) =>
+                    value!.isEmpty ? "Enter your password" : null,
               ),
               SizedBox(height: 20),
               isLoading

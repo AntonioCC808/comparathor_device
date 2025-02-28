@@ -6,8 +6,8 @@ class EditProductScreen extends StatefulWidget {
   final int productId;
   final Map<String, dynamic> initialProductData;
 
-  EditProductScreen(
-      {required this.productId, required this.initialProductData});
+  const EditProductScreen(
+      {super.key, required this.productId, required this.initialProductData});
 
   @override
   _EditProductScreenState createState() => _EditProductScreenState();

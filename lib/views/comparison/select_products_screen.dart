@@ -7,7 +7,7 @@ import 'package:dio/dio.dart';
 class SelectProductsScreen extends ConsumerStatefulWidget {
   final List<int> selectedProductIds; // ✅ Add this parameter
 
-  SelectProductsScreen({required this.selectedProductIds});
+  const SelectProductsScreen({super.key, required this.selectedProductIds});
 
   @override
   _SelectProductsScreenState createState() => _SelectProductsScreenState();

@@ -22,7 +22,7 @@ void main() async {
 
 class MyApp extends StatelessWidget {
   final Widget startingScreen;
-  MyApp({required this.startingScreen});
+  const MyApp({super.key, required this.startingScreen});
 
   @override
   Widget build(BuildContext context) {

@@ -3,6 +3,8 @@ import 'package:comparathor_device/core/api_service.dart';
 import 'package:dio/dio.dart';
 
 class AddProductScreen extends StatefulWidget {
+  const AddProductScreen({super.key});
+
   @override
   _AddProductScreenState createState() => _AddProductScreenState();
 }

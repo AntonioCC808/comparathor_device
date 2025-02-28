@@ -6,7 +6,7 @@ import 'package:dio/dio.dart';
 class ProductDetailScreen extends ConsumerStatefulWidget {
   final int productId;
 
-  ProductDetailScreen({required this.productId});
+  const ProductDetailScreen({super.key, required this.productId});
 
   @override
   _ProductDetailScreenState createState() => _ProductDetailScreenState();

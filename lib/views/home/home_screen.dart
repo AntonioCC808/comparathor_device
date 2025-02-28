@@ -3,6 +3,8 @@ import 'package:comparathor_device/views/product/product_list_screen.dart';
 import 'package:comparathor_device/views/comparison/comparison_list_screen.dart';
 
 class HomeScreen extends StatefulWidget {
+  const HomeScreen({super.key});
+
   @override
   _HomeScreenState createState() => _HomeScreenState();
 }

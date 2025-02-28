@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:comparathor_device/providers/comparison_provider.dart';
 
 class ComparisonListScreen extends ConsumerWidget {
+  const ComparisonListScreen({super.key});
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final comparisonAsyncValue = ref.watch(comparisonProvider);
