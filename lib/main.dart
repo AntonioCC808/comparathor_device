@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart'; // ✅ Import Riverpod
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:comparathor_device/core/api_service.dart';
 import 'package:comparathor_device/views/auth/login_screen.dart';
@@ -17,7 +18,12 @@ void main() async {
   await dotenv.load(fileName: ".env");
 
   String? token = await ApiService().getToken();
-  runApp(MyApp(startingScreen: token != null ? HomeScreen() : LoginScreen()));
+
+  runApp(
+    ProviderScope( // ✅ Wrap MyApp inside ProviderScope
+      child: MyApp(startingScreen: token != null ? const HomeScreen() : const LoginScreen()),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
@@ -29,26 +35,23 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Comparathor Device',
       theme: ThemeData(primarySwatch: Colors.blue),
-      initialRoute: '/',
+      home: startingScreen, // ✅ Use `home` instead of initialRoute
       routes: {
-        '/': (context) => startingScreen,
-        '/login': (context) => LoginScreen(),
-        '/register': (context) => RegisterScreen(),
-        '/home': (context) => HomeScreen(),
-        '/products': (context) => ProductListScreen(),
-        '/add-product': (context) => AddProductScreen(),
-        '/comparisons': (context) => ComparisonListScreen(),
+        '/login': (context) => const LoginScreen(),
+        '/register': (context) => const RegisterScreen(),
+        '/home': (context) => const HomeScreen(),
+        '/products': (context) => const ProductListScreen(),
+        '/add-product': (context) => const AddProductScreen(),
+        '/comparisons': (context) => const ComparisonListScreen(),
       },
       onGenerateRoute: (settings) {
-        if (settings.name == '/product-detail') {
-          final int productId = settings.arguments as int;
+        if (settings.name == '/product-detail' && settings.arguments is int) {
           return MaterialPageRoute(
-            builder: (context) => ProductDetailScreen(productId: productId),
+            builder: (context) => ProductDetailScreen(productId: settings.arguments as int),
           );
         }
-        if (settings.name == '/edit-product') {
-          final Map<String, dynamic> args =
-              settings.arguments as Map<String, dynamic>;
+        if (settings.name == '/edit-product' && settings.arguments is Map<String, dynamic>) {
+          final args = settings.arguments as Map<String, dynamic>;
           return MaterialPageRoute(
             builder: (context) => EditProductScreen(
               productId: args['productId'],
@@ -56,18 +59,14 @@ class MyApp extends StatelessWidget {
             ),
           );
         }
-        if (settings.name == '/comparison-detail') {
-          final int comparisonId = settings.arguments as int;
+        if (settings.name == '/comparison-detail' && settings.arguments is int) {
           return MaterialPageRoute(
-            builder: (context) =>
-                ComparisonDetailScreen(comparisonId: comparisonId),
+            builder: (context) => ComparisonDetailScreen(comparisonId: settings.arguments as int),
           );
         }
-        if (settings.name == '/select-products') {
-          final List<int> selectedProductIds = settings.arguments as List<int>;
+        if (settings.name == '/select-products' && settings.arguments is List<int>) {
           return MaterialPageRoute(
-            builder: (context) =>
-                SelectProductsScreen(selectedProductIds: selectedProductIds),
+            builder: (context) => SelectProductsScreen(selectedProductIds: settings.arguments as List<int>),
           );
         }
         return null;

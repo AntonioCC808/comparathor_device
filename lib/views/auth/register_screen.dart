@@ -26,7 +26,7 @@ class RegisterScreenState extends State<RegisterScreen> {
     });
 
     try {
-      await apiService.postRequest("/register", {
+      await apiService.postRequest("/auth/register", {
         "email": emailController.text,
         "password": passwordController.text,
         "role": "user",

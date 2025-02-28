@@ -4,7 +4,10 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class ApiService {
   final Dio _dio = Dio(BaseOptions(
-      baseUrl: dotenv.env['API_BASE_URL'] ?? 'http://localhost:8000'));
+    baseUrl: dotenv.env['API_BASE_URL'] != null
+        ? "${dotenv.env['API_BASE_URL']}/api/v1"
+        : 'http://localhost:8000/api/v1',
+  ));
 
   Future<Response> postRequest(String endpoint, dynamic data) async {
     try {
@@ -41,7 +44,7 @@ class ApiService {
 
   Future<Response> getProductDetails(int productId) async {
     try {
-      final response = await _dio.get("/products/\$productId");
+      final response = await _dio.get("/products/$productId");
       return response;
     } catch (e) {
       throw Exception("Failed to load product details");
@@ -61,7 +64,7 @@ class ApiService {
       int productId, Map<String, dynamic> productData) async {
     try {
       final response =
-          await _dio.put("/products/\$productId", data: productData);
+          await _dio.put("/products/$productId", data: productData);
       return response;
     } catch (e) {
       throw Exception("Failed to update product");
@@ -70,7 +73,7 @@ class ApiService {
 
   Future<Response> deleteProduct(int productId) async {
     try {
-      final response = await _dio.delete("/products/\$productId");
+      final response = await _dio.delete("/products/$productId");
       return response;
     } catch (e) {
       throw Exception("Failed to delete product");
@@ -97,7 +100,7 @@ class ApiService {
 
   Future<Response> getComparisonDetails(int comparisonId) async {
     try {
-      final response = await _dio.get("/comparisons/\$comparisonId");
+      final response = await _dio.get("/comparisons/$comparisonId");
       return response;
     } catch (e) {
       throw Exception("Failed to load comparison details");
@@ -107,7 +110,7 @@ class ApiService {
   Future<Response> getSortedComparisonDetails(
       int comparisonId, String sortBy) async {
     try {
-      final response = await _dio.get("/comparisons/\$comparisonId",
+      final response = await _dio.get("/comparisons/$comparisonId",
           queryParameters: {"sort_by": sortBy});
       return response;
     } catch (e) {

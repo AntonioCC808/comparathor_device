@@ -6,6 +6,7 @@ import 'package:comparathor_device/views/product/add_product_screen.dart';
 import 'package:comparathor_device/views/product/edit_product_screen.dart';
 import 'package:comparathor_device/views/comparison/select_products_screen.dart';
 import 'package:comparathor_device/core/api_service.dart';
+import 'package:comparathor_device/views/home/home_screen.dart';
 
 class ProductListScreen extends ConsumerStatefulWidget {
   const ProductListScreen({super.key});
@@ -57,6 +58,10 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
       appBar: AppBar(
         title: const Text("Products"),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.home),
+            onPressed: () => Navigator.pushNamed(context, "/home"),
+          ),
           IconButton(
             icon: const Icon(Icons.add),
             onPressed: () async {
@@ -164,7 +169,7 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
         ),
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, stack) =>
-            const Center(child: Text("Failed to load products")),
+        const Center(child: Text("Failed to load products")),
       ),
     );
   }

@@ -28,7 +28,7 @@ class LoginScreenState extends State<LoginScreen> {
     });
 
     try {
-      Response response = await apiService.postRequest("/login", {
+      Response response = await apiService.postRequest("/auth/login", {
         "email": emailController.text,
         "password": passwordController.text,
       });
