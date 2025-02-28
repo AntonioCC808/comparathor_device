@@ -1,67 +1,76 @@
 import 'package:flutter/material.dart';
-import 'screens/main_dashboard.dart';
-import 'screens/sign_in.dart';
-import 'screens/my_products.dart';
-import 'screens/my_comparisons.dart';
-import 'screens/add_products.dart';
-import 'screens/add_comparison.dart';
-import 'screens/settings.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:comparathor_device/core/api_service.dart';
+import 'package:comparathor_device/views/auth/login_screen.dart';
+import 'package:comparathor_device/views/auth/register_screen.dart';
+import 'package:comparathor_device/views/home/home_screen.dart';
+import 'package:comparathor_device/views/product/product_list_screen.dart';
+import 'package:comparathor_device/views/product/product_detail_screen.dart';
+import 'package:comparathor_device/views/product/add_product_screen.dart';
+import 'package:comparathor_device/views/product/edit_product_screen.dart';
+import 'package:comparathor_device/views/comparison/comparison_list_screen.dart';
+import 'package:comparathor_device/views/comparison/comparison_detail_screen.dart';
+import 'package:comparathor_device/views/comparison/select_products_screen.dart';
 
-void main() {
-  runApp(ComparathorApp());
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await dotenv.load(fileName: ".env");
+
+  String? token = await ApiService().getToken();
+  runApp(MyApp(startingScreen: token != null ? HomeScreen() : LoginScreen()));
 }
 
-class ComparathorApp extends StatelessWidget {
+class MyApp extends StatelessWidget {
+  final Widget startingScreen;
+  MyApp({required this.startingScreen});
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Comparathor',
-      theme: ThemeData(
-        primarySwatch: Colors.indigo,
-        brightness: Brightness.light,
-        textTheme: TextTheme(
-          displayLarge: TextStyle(
-              fontSize: 32.0,
-              fontWeight: FontWeight.bold,
-              color: Colors.indigo),
-          bodyLarge: TextStyle(fontSize: 16.0, color: Colors.black87),
-          labelLarge: TextStyle(
-              fontSize: 18.0, fontWeight: FontWeight.w600, color: Colors.white),
-        ),
-        elevatedButtonTheme: ElevatedButtonThemeData(
-          style: ElevatedButton.styleFrom(
-            foregroundColor: Colors.white,
-            backgroundColor: Colors.indigo,
-            padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-            textStyle: TextStyle(fontSize: 18.0, fontWeight: FontWeight.w600),
-            shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12.0)),
-          ),
-        ),
-        cardTheme: CardTheme(
-          margin: EdgeInsets.all(10.0),
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.0)),
-          elevation: 4,
-        ),
-        inputDecorationTheme: InputDecorationTheme(
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10.0)),
-          filled: true,
-          fillColor: Colors.grey[100],
-          labelStyle:
-              TextStyle(color: Colors.indigo, fontWeight: FontWeight.w600),
-          prefixIconColor: Colors.indigo,
-        ),
-      ),
-      initialRoute: '/signin',
+      title: 'Comparathor Device',
+      theme: ThemeData(primarySwatch: Colors.blue),
+      initialRoute: '/',
       routes: {
-        '/': (context) => MainDashboard(),
-        '/signin': (context) => SignInScreen(),
-        '/myproducts': (context) => MyProductsScreen(),
-        '/mycomparisons': (context) => MyComparisonsScreen(),
-        '/addproduct': (context) => AddProductScreen(),
-        '/addcomparison': (context) => AddComparisonScreen(),
-        '/settings': (context) => SettingsScreen(),
+        '/': (context) => startingScreen,
+        '/login': (context) => LoginScreen(),
+        '/register': (context) => RegisterScreen(),
+        '/home': (context) => HomeScreen(),
+        '/products': (context) => ProductListScreen(),
+        '/add-product': (context) => AddProductScreen(),
+        '/comparisons': (context) => ComparisonListScreen(),
+      },
+      onGenerateRoute: (settings) {
+        if (settings.name == '/product-detail') {
+          final int productId = settings.arguments as int;
+          return MaterialPageRoute(
+            builder: (context) => ProductDetailScreen(productId: productId),
+          );
+        }
+        if (settings.name == '/edit-product') {
+          final Map<String, dynamic> args =
+              settings.arguments as Map<String, dynamic>;
+          return MaterialPageRoute(
+            builder: (context) => EditProductScreen(
+              productId: args['productId'],
+              initialProductData: args['initialProductData'],
+            ),
+          );
+        }
+        if (settings.name == '/comparison-detail') {
+          final int comparisonId = settings.arguments as int;
+          return MaterialPageRoute(
+            builder: (context) =>
+                ComparisonDetailScreen(comparisonId: comparisonId),
+          );
+        }
+        if (settings.name == '/select-products') {
+          final List<int> selectedProductIds = settings.arguments as List<int>;
+          return MaterialPageRoute(
+            builder: (context) =>
+                SelectProductsScreen(selectedProductIds: selectedProductIds),
+          );
+        }
+        return null;
       },
     );
   }
