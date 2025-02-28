@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:comparathor_device/providers/product_provider.dart';
 import 'package:comparathor_device/core/api_service.dart';
-import 'package:dio/dio.dart';
 
 class SelectProductsScreen extends ConsumerStatefulWidget {
   final List<int> selectedProductIds; // ✅ Add this parameter

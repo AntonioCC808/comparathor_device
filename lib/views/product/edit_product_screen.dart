@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:comparathor_device/core/api_service.dart';
-import 'package:dio/dio.dart';
 
 class EditProductScreen extends StatefulWidget {
   final int productId;

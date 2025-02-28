@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:comparathor_device/core/api_service.dart';
-import 'package:dio/dio.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
