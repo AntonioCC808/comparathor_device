@@ -17,25 +17,42 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await dotenv.load(fileName: ".env");
 
-  String? token = await ApiService().getToken();
-
   runApp(
-    ProviderScope( // ✅ Wrap MyApp inside ProviderScope
-      child: MyApp(startingScreen: token != null ? const HomeScreen() : const LoginScreen()),
+    const ProviderScope(
+      child: MyApp(),
     ),
   );
 }
 
 class MyApp extends StatelessWidget {
-  final Widget startingScreen;
-  const MyApp({super.key, required this.startingScreen});
+  const MyApp({super.key});
+
+  Future<bool> checkIfLoggedIn() async {
+    String? token = await ApiService().getToken();
+    return token != null; // Returns true if logged in, false otherwise
+  }
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Comparathor Device',
       theme: ThemeData(primarySwatch: Colors.blue),
-      home: startingScreen, // ✅ Use `home` instead of initialRoute
+      home: FutureBuilder<bool>(
+        future: checkIfLoggedIn(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Scaffold(
+              body: Center(child: CircularProgressIndicator()), // Show loading spinner while checking
+            );
+          }
+
+          if (snapshot.hasError || !snapshot.hasData || !snapshot.data!) {
+            return const LoginScreen(); // If error or not logged in, show login
+          }
+
+          return const HomeScreen(); // If token exists, go to home
+        },
+      ),
       routes: {
         '/login': (context) => const LoginScreen(),
         '/register': (context) => const RegisterScreen(),

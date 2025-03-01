@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:comparathor_device/providers/comparison_provider.dart';
+import 'comparison_detail_screen.dart'; // Import the details screen
 
 class ComparisonListScreen extends ConsumerWidget {
   const ComparisonListScreen({super.key});
@@ -21,7 +22,14 @@ class ComparisonListScreen extends ConsumerWidget {
               subtitle: Text(comparison["description"]),
               trailing: Icon(Icons.arrow_forward),
               onTap: () {
-                // Navigate to comparison details
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => ComparisonDetailScreen(
+                      comparisonId: comparison["id"], // Ensure "id" exists in API response
+                    ),
+                  ),
+                );
               },
             );
           },

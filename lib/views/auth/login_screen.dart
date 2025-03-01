@@ -1,7 +1,9 @@
 import 'package:comparathor_device/views/home/home_screen.dart';
+import 'package:comparathor_device/views/auth/register_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:comparathor_device/core/api_service.dart';
 import 'package:dio/dio.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -38,7 +40,7 @@ class LoginScreenState extends State<LoginScreen> {
 
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (context) => HomeScreen()),
+        MaterialPageRoute(builder: (context) => const HomeScreen()),
       );
     } catch (e) {
       setState(() {
@@ -54,33 +56,100 @@ class LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text("Login")),
+      backgroundColor: Colors.white, // White Background
+      appBar: AppBar(
+        backgroundColor: Colors.blue,
+        title: const Text("Comparathor", style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold)),
+        centerTitle: true,
+      ),
       body: Padding(
-        padding: EdgeInsets.all(16.0),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            children: [
-              if (errorMessage != null)
-                Text(errorMessage!, style: TextStyle(color: Colors.red)),
-              TextFormField(
-                controller: emailController,
-                decoration: InputDecoration(labelText: "Email"),
-                validator: (value) =>
-                    value!.isEmpty ? "Enter your email" : null,
-              ),
-              TextFormField(
-                controller: passwordController,
-                decoration: InputDecoration(labelText: "Password"),
-                obscureText: true,
-                validator: (value) =>
-                    value!.isEmpty ? "Enter your password" : null,
-              ),
-              SizedBox(height: 20),
-              isLoading
-                  ? CircularProgressIndicator()
-                  : ElevatedButton(onPressed: login, child: Text("Login")),
-            ],
+        padding: const EdgeInsets.all(16.0),
+        child: Center(
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                // App Logo
+                SvgPicture.asset("assets/images/app-logo.svg", height: 100),
+
+                const SizedBox(height: 20),
+
+                // Error Message
+                if (errorMessage != null)
+                  Text(
+                    errorMessage!,
+                    style: const TextStyle(color: Colors.red, fontSize: 16),
+                  ),
+
+                const SizedBox(height: 10),
+
+                // Login Form
+                Form(
+                  key: _formKey,
+                  child: Column(
+                    children: [
+                      // Email Input
+                      TextFormField(
+                        controller: emailController,
+                        decoration: InputDecoration(
+                          labelText: "Email",
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
+                        validator: (value) => value!.isEmpty ? "Enter your email" : null,
+                      ),
+
+                      const SizedBox(height: 15),
+
+                      // Password Input
+                      TextFormField(
+                        controller: passwordController,
+                        decoration: InputDecoration(
+                          labelText: "Password",
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
+                        obscureText: true,
+                        validator: (value) => value!.isEmpty ? "Enter your password" : null,
+                      ),
+
+                      const SizedBox(height: 20),
+
+                      // Login Button
+                      isLoading
+                          ? const CircularProgressIndicator()
+                          : ElevatedButton(
+                        onPressed: login,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.blue,
+                          padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
+                          textStyle: const TextStyle(fontSize: 18),
+                        ),
+                        child: const Text("Login", style: TextStyle(color: Colors.white)),
+                      ),
+
+                      const SizedBox(height: 20),
+
+                      // Register Button
+                      TextButton(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (context) => const RegisterScreen()),
+                          );
+                        },
+                        child: const Text(
+                          "Don't have an account? Register here",
+                          style: TextStyle(color: Colors.blue, fontSize: 16),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
