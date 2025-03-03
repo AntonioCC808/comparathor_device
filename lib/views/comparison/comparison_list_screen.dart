@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:comparathor_device/providers/comparison_provider.dart';
+import 'package:comparathor_device/core/api_service.dart';
 import 'comparison_detail_screen.dart'; // Import the details screen
 
 class ComparisonListScreen extends ConsumerWidget {
@@ -34,7 +35,39 @@ class ComparisonListScreen extends ConsumerWidget {
                   style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black),
                 ),
                 subtitle: Text(comparison["description"]),
-                trailing: Icon(Icons.arrow_forward, color: Colors.blue),
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      icon: Icon(Icons.delete, color: Colors.red),
+                      onPressed: () async {
+                        final confirmed = await showDialog<bool>(
+                          context: context,
+                          builder: (context) => AlertDialog(
+                            title: Text("Delete Comparison"),
+                            content: Text("Are you sure you want to delete this comparison?"),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(context, false),
+                                child: Text("Cancel"),
+                              ),
+                              TextButton(
+                                onPressed: () => Navigator.pop(context, true),
+                                child: Text("Delete", style: TextStyle(color: Colors.red)),
+                              ),
+                            ],
+                          ),
+                        );
+
+                        if (confirmed == true) {
+                          await ApiService().deleteComparison(comparison["id"] as int);
+                          ref.refresh(comparisonProvider);
+                        }
+                      },
+                    ),
+                    Icon(Icons.arrow_forward, color: Colors.blue),
+                  ],
+                ),
                 onTap: () {
                   Navigator.push(
                     context,

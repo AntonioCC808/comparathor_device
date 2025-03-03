@@ -108,14 +108,48 @@ class ApiService {
     }
   }
 
-  // Create a new comparison
+// Create a new comparison with authentication token
   Future<Response> createComparison(Map<String, dynamic> comparisonData) async {
     try {
-      final response =
-          await _dio.post("/comparisons", data: comparisonData); // POST request
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('auth_token');
+
+      if (token == null) {
+        throw Exception("No authentication token found");
+      }
+
+      final response = await _dio.post(
+        "/comparisons/",
+        data: comparisonData,
+        options: Options(headers: {
+          "Authorization": "Bearer $token",
+          "Content-Type": "application/json",
+        }),
+      );
+
       return response;
     } catch (e) {
-      throw Exception("Failed to create comparison"); // Handle errors
+      throw Exception("Failed to create comparison: ${e.toString()}");
+    }
+  }
+  Future<void> deleteComparison(int comparisonId) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('auth_token');
+
+      if (token == null) {
+        throw Exception("No authentication token found");
+      }
+
+      await _dio.delete(
+        "/comparisons/$comparisonId",
+        options: Options(headers: {
+          "Authorization": "Bearer $token",
+          "Content-Type": "application/json",
+        }),
+      );
+    } catch (e) {
+      throw Exception("Failed to delete comparison: \${e.toString()}");
     }
   }
 

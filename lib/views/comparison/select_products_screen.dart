@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:comparathor_device/providers/product_provider.dart';
 import 'package:comparathor_device/core/api_service.dart';
 
 class SelectProductsScreen extends ConsumerStatefulWidget {
@@ -19,6 +18,8 @@ class _SelectProductsScreenState extends ConsumerState<SelectProductsScreen> {
   String? selectedProductType;
   List<dynamic> productTypes = [];
   List<dynamic> filteredProducts = [];
+  TextEditingController titleController = TextEditingController();
+  TextEditingController descriptionController = TextEditingController();
 
   @override
   void initState() {
@@ -29,9 +30,9 @@ class _SelectProductsScreenState extends ConsumerState<SelectProductsScreen> {
   void fetchProductTypes() async {
     setState(() => isLoading = true);
     try {
-      final types = await apiService.fetchProductTypes();
+      final response = await apiService.getProductTypes();
       setState(() {
-        productTypes = types;
+        productTypes = response.data;
         isLoading = false;
       });
     } catch (e) {
@@ -45,12 +46,10 @@ class _SelectProductsScreenState extends ConsumerState<SelectProductsScreen> {
   void fetchProducts(String productTypeId) async {
     setState(() => isLoading = true);
     try {
-      final allProducts = await apiService.fetchProducts();
+      final response = await apiService
+          .getRequest("/products?product_type_id=$productTypeId");
       setState(() {
-        filteredProducts = allProducts
-            .where((product) =>
-                product['product_type_id'].toString() == productTypeId)
-            .toList();
+        filteredProducts = response.data;
         isLoading = false;
       });
     } catch (e) {
@@ -74,14 +73,18 @@ class _SelectProductsScreenState extends ConsumerState<SelectProductsScreen> {
       errorMessage = null;
     });
 
-    try {
-      await apiService.createComparison({
-        "title": "New Comparison",
-        "description": "Automatically generated comparison",
-        "product_type_id": selectedProductType,
-        "products": widget.selectedProductIds,
-      });
+    final comparisonData = {
+      "title": titleController.text,
+      "description": descriptionController.text,
+      "date_created": DateTime.now().toIso8601String(),
+      "product_type_id": int.parse(selectedProductType ?? "0"),
+      "products": widget.selectedProductIds,
+    };
 
+    print("📤 Sending comparison data: $comparisonData");
+
+    try {
+      await apiService.createComparison(comparisonData);
       Navigator.pop(context, true);
     } catch (e) {
       setState(() {
@@ -93,6 +96,7 @@ class _SelectProductsScreenState extends ConsumerState<SelectProductsScreen> {
       isLoading = false;
     });
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -106,74 +110,96 @@ class _SelectProductsScreenState extends ConsumerState<SelectProductsScreen> {
         children: [
           Padding(
             padding: EdgeInsets.all(16.0),
-            child: DropdownButtonFormField<String>(
-              value: selectedProductType,
-              decoration: InputDecoration(
-                labelText: "Select Product Type",
-                border: OutlineInputBorder(),
-              ),
-              items: productTypes
-                  .map((type) => DropdownMenuItem(
-                        value: type['id'].toString(),
-                        child: Text(type['name']),
-                      ))
-                  .toList(),
-              onChanged: (value) {
-                setState(() {
-                  selectedProductType = value;
-                  fetchProducts(value!);
-                });
-              },
+            child: Column(
+              children: [
+                TextField(
+                  controller: titleController,
+                  decoration: InputDecoration(
+                    labelText: "Comparison Title",
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                SizedBox(height: 10),
+                TextField(
+                  controller: descriptionController,
+                  decoration: InputDecoration(
+                    labelText: "Comparison Description",
+                    border: OutlineInputBorder(),
+                  ),
+                  maxLines: 3,
+                ),
+                SizedBox(height: 10),
+                DropdownButtonFormField<String>(
+                  value: selectedProductType,
+                  decoration: InputDecoration(
+                    labelText: "Select Product Type",
+                    border: OutlineInputBorder(),
+                  ),
+                  items: productTypes
+                      .map((type) => DropdownMenuItem(
+                    value: type['id'].toString(),
+                    child: Text(type['name']),
+                  ))
+                      .toList(),
+                  onChanged: (value) {
+                    setState(() {
+                      selectedProductType = value;
+                      filteredProducts = [];
+                    });
+                    fetchProducts(value!);
+                  },
+                ),
+              ],
             ),
           ),
           Expanded(
             child: isLoading
                 ? Center(child: CircularProgressIndicator())
                 : filteredProducts.isEmpty
-                    ? Center(child: Text("No products available for this type"))
-                    : ListView.builder(
-                        itemCount: filteredProducts.length,
-                        itemBuilder: (context, index) {
-                          final product = filteredProducts[index];
-                          bool isSelected =
-                              widget.selectedProductIds.contains(product["id"]);
+                ? Center(child: Text("No products available for this type"))
+                : ListView.builder(
+              itemCount: filteredProducts.length,
+              itemBuilder: (context, index) {
+                final product = filteredProducts[index];
+                bool isSelected =
+                widget.selectedProductIds.contains(product["id"]);
 
-                          return Card(
-                            margin: EdgeInsets.symmetric(
-                                horizontal: 16, vertical: 8),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10),
-                              side: BorderSide(
-                                color: isSelected
-                                    ? Colors.green
-                                    : Colors.blue[100]!,
-                                width: 2,
-                              ),
-                            ),
-                            child: ListTile(
-                              title: Text(product["name"],
-                                  style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.blue)),
-                              subtitle: Text("Price: \$${product["price"]}"),
-                              trailing: isSelected
-                                  ? Icon(Icons.check, color: Colors.green)
-                                  : null,
-                              onTap: () {
-                                setState(() {
-                                  if (isSelected) {
-                                    widget.selectedProductIds
-                                        .remove(product["id"]);
-                                  } else {
-                                    widget.selectedProductIds
-                                        .add(product["id"]);
-                                  }
-                                });
-                              },
-                            ),
-                          );
-                        },
-                      ),
+                return Card(
+                  margin: EdgeInsets.symmetric(
+                      horizontal: 16, vertical: 8),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    side: BorderSide(
+                      color: isSelected
+                          ? Colors.green
+                          : Colors.blue[100]!,
+                      width: 2,
+                    ),
+                  ),
+                  child: ListTile(
+                    title: Text(product["name"],
+                        style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.blue)),
+                    subtitle: Text("Price: \$${product["price"]}"),
+                    trailing: isSelected
+                        ? Icon(Icons.check, color: Colors.green)
+                        : null,
+                    onTap: () {
+                      setState(() {
+                        if (isSelected) {
+                          widget.selectedProductIds
+                              .remove(product["id"]);
+                        } else {
+                          widget.selectedProductIds
+                              .add(product["id"]);
+                        }
+                      });
+                    },
+                  ),
+                );
+              },
+            ),
           ),
           if (errorMessage != null)
             Padding(
