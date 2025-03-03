@@ -12,13 +12,11 @@ class ComparisonDetailScreen extends ConsumerStatefulWidget {
   _ComparisonDetailScreenState createState() => _ComparisonDetailScreenState();
 }
 
-class _ComparisonDetailScreenState
-    extends ConsumerState<ComparisonDetailScreen> {
+class _ComparisonDetailScreenState extends ConsumerState<ComparisonDetailScreen> {
   ApiService apiService = ApiService();
   Map<String, dynamic>? comparison;
   bool isLoading = true;
   String? errorMessage;
-  String? selectedSortAttribute;
 
   @override
   void initState() {
@@ -26,18 +24,14 @@ class _ComparisonDetailScreenState
     fetchComparisonDetails();
   }
 
-  void fetchComparisonDetails({String? sortBy}) async {
+  void fetchComparisonDetails() async {
     setState(() {
       isLoading = true;
       errorMessage = null;
     });
 
     try {
-      Response response = sortBy == null
-          ? await apiService.getComparisonDetails(widget.comparisonId)
-          : await apiService.getSortedComparisonDetails(
-              widget.comparisonId, sortBy);
-
+      Response response = await apiService.getComparisonDetails(widget.comparisonId);
       setState(() {
         comparison = response.data;
         isLoading = false;
@@ -50,81 +44,116 @@ class _ComparisonDetailScreenState
     }
   }
 
+  Widget buildStars(double score) {
+    int fullStars = score.floor();
+    bool hasHalfStar = (score - fullStars) >= 0.5;
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        for (int i = 0; i < fullStars; i++)
+          Icon(Icons.star, color: Colors.amber, size: 22),
+        if (hasHalfStar) Icon(Icons.star_half, color: Colors.amber, size: 22),
+        for (int i = fullStars + (hasHalfStar ? 1 : 0); i < 5; i++)
+          Icon(Icons.star_border, color: Colors.amber, size: 22),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    if (comparison == null || comparison!['products'] == null || comparison!['products'].isEmpty) {
+      return Scaffold(
+        appBar: AppBar(
+          title: Text("Comparison Details"),
+          backgroundColor: Colors.blue,
+          foregroundColor: Colors.white,
+        ),
+        body: Center(child: Text("No comparison data available")),
+      );
+    }
+
+    var bestProduct = comparison!['products'].reduce((a, b) => (a['product']['score'] as double) > (b['product']['score'] as double) ? a : b);
+
     return Scaffold(
-      appBar: AppBar(title: Text("Comparison Details")),
-      body: isLoading
-          ? Center(child: CircularProgressIndicator())
-          : errorMessage != null
-              ? Center(child: Text(errorMessage!))
-              : Padding(
-                  padding: EdgeInsets.all(16.0),
-                  child: Column(
-                    children: [
-                      DropdownButton<String>(
-                        value: selectedSortAttribute,
-                        hint: Text("Sort by Attribute"),
-                        items: comparison!["products"][0]["product_metadata"]
-                            .map<DropdownMenuItem<String>>((attribute) {
-                          return DropdownMenuItem<String>(
-                            value: attribute["attribute"],
-                            child: Text(attribute["attribute"]),
-                          );
-                        }).toList(),
-                        onChanged: (value) {
-                          setState(() {
-                            selectedSortAttribute = value;
-                            fetchComparisonDetails(sortBy: value);
-                          });
-                        },
-                      ),
-                      SizedBox(height: 16),
-                      SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        child: DataTable(
-                          columnSpacing: 20,
-                          headingRowColor: WidgetStateColor.resolveWith(
-                              (states) => Colors.blueGrey[100]!),
-                          dataRowHeight: 60,
-                          columns: [
-                            DataColumn(
-                                label: Text("Attribute",
-                                    style: TextStyle(
-                                        fontWeight: FontWeight.bold))),
-                            for (var product in comparison!["products"])
-                              DataColumn(
-                                  label: Text(product["name"],
-                                      style: TextStyle(
-                                          fontWeight: FontWeight.bold))),
-                          ],
-                          rows: [
-                            for (var attribute in comparison!["products"][0]
-                                ["product_metadata"])
-                              DataRow(
-                                cells: [
-                                  DataCell(Text(attribute["attribute"],
-                                      style: TextStyle(
-                                          fontWeight: FontWeight.w600))),
-                                  for (var product in comparison!["products"])
-                                    DataCell(Text(
-                                      product["product_metadata"]
-                                          .firstWhere(
-                                            (meta) =>
-                                                meta["attribute"] ==
-                                                attribute["attribute"],
-                                            orElse: () => {"value": "N/A"},
-                                          )["value"]
-                                          .toString(),
-                                    )),
-                                ],
-                              ),
-                          ],
-                        ),
-                      ),
-                    ],
+      appBar: AppBar(
+        title: Text("Comparison Details"),
+        backgroundColor: Colors.blue,
+        foregroundColor: Colors.white,
+      ),
+      body: Padding(
+        padding: EdgeInsets.all(16.0),
+        child: Column(
+          children: [
+            Text("Best Choice", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+            SizedBox(height: 8),
+            Container(
+              decoration: BoxDecoration(
+                border: Border.all(color: Colors.green, width: 2),
+                borderRadius: BorderRadius.circular(8),
+                color: Colors.green[50],
+              ),
+              padding: EdgeInsets.all(16),
+              child: Column(
+                children: [
+                  Text(
+                    bestProduct['product']['name'],
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.green[900]),
                   ),
+                  Text("Price: \$${bestProduct['product']['price'].toStringAsFixed(2)}", style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                  buildStars(bestProduct['product']['score'] as double),
+                ],
+              ),
+            ),
+            SizedBox(height: 16),
+            Text("Product Comparison", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            Expanded(
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: DataTable(
+                  columnSpacing: 20,
+                  headingRowColor: WidgetStateColor.resolveWith((states) => Colors.blue[100]! ),
+                  columns: [
+                    DataColumn(label: Text("Attribute", style: TextStyle(fontWeight: FontWeight.bold))),
+                    for (var product in comparison!['products'])
+                      DataColumn(label: Text(product['product']['name'], style: TextStyle(fontWeight: FontWeight.bold))),
+                  ],
+                  rows: [
+                    for (var attribute in comparison!['products'][0]['product']['product_metadata'])
+                      DataRow(
+                        cells: [
+                          DataCell(Text(attribute['attribute'], style: TextStyle(fontWeight: FontWeight.w600))),
+                          for (var product in comparison!['products'])
+                            DataCell(Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  product['product']['product_metadata']
+                                      .firstWhere(
+                                        (meta) => meta['attribute'] == attribute['attribute'],
+                                    orElse: () => {'value': 'N/A'},
+                                  )['value']
+                                      .toString(),
+                                  style: TextStyle(fontWeight: FontWeight.bold),
+                                ),
+                                buildStars(
+                                  product['product']['product_metadata']
+                                      .firstWhere(
+                                        (meta) => meta['attribute'] == attribute['attribute'],
+                                    orElse: () => {'score': 0.0},
+                                  )['score'] as double,
+                                ),
+                              ],
+                            )),
+                        ],
+                      ),
+                  ],
                 ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

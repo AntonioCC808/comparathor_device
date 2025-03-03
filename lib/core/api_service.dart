@@ -14,7 +14,8 @@ class ApiService {
   // Generic POST request
   Future<Response> postRequest(String endpoint, dynamic data) async {
     try {
-      final response = await _dio.post(endpoint, data: data); // Make POST request
+      final response =
+          await _dio.post(endpoint, data: data); // Make POST request
       return response; // Return the response
     } catch (e) {
       throw Exception("Failed to connect to API"); // Handle errors
@@ -33,19 +34,22 @@ class ApiService {
 
   // Save authentication token to local storage
   Future<void> saveToken(String token) async {
-    final prefs = await SharedPreferences.getInstance(); // Get SharedPreferences instance
+    final prefs =
+        await SharedPreferences.getInstance(); // Get SharedPreferences instance
     await prefs.setString('auth_token', token); // Save token as a string
   }
 
   // Retrieve authentication token from local storage
   Future<String?> getToken() async {
-    final prefs = await SharedPreferences.getInstance(); // Get SharedPreferences instance
+    final prefs =
+        await SharedPreferences.getInstance(); // Get SharedPreferences instance
     return prefs.getString('auth_token'); // Retrieve token from local storage
   }
 
   // Logout: Remove authentication token from storage
   Future<void> logout() async {
-    final prefs = await SharedPreferences.getInstance(); // Get SharedPreferences instance
+    final prefs =
+        await SharedPreferences.getInstance(); // Get SharedPreferences instance
     await prefs.remove('auth_token'); // Remove token
   }
 
@@ -59,10 +63,22 @@ class ApiService {
     }
   }
 
+  // Fetch product types from API
+  Future<Response> getProductTypes() async {
+    try {
+      final response =
+          await _dio.get("/product-types"); // Adjust endpoint as needed
+      return response;
+    } catch (e) {
+      throw Exception("Failed to fetch product types");
+    }
+  }
+
   // Add a new product
   Future<Response> addProduct(Map<String, dynamic> productData) async {
     try {
-      final response = await _dio.post("/products", data: productData); // POST request
+      final response =
+          await _dio.post("/products", data: productData); // POST request
       return response;
     } catch (e) {
       throw Exception("Failed to add product"); // Handle errors
@@ -70,9 +86,11 @@ class ApiService {
   }
 
   // Update existing product by ID
-  Future<Response> updateProduct(int productId, Map<String, dynamic> productData) async {
+  Future<Response> updateProduct(
+      int productId, Map<String, dynamic> productData) async {
     try {
-      final response = await _dio.put("/products/$productId", data: productData); // PUT request
+      final response = await _dio.put("/products/$productId",
+          data: productData); // PUT request
       return response;
     } catch (e) {
       throw Exception("Failed to update product"); // Handle errors
@@ -82,7 +100,8 @@ class ApiService {
   // Delete product by ID
   Future<Response> deleteProduct(int productId) async {
     try {
-      final response = await _dio.delete("/products/$productId"); // DELETE request
+      final response =
+          await _dio.delete("/products/$productId"); // DELETE request
       return response;
     } catch (e) {
       throw Exception("Failed to delete product"); // Handle errors
@@ -92,7 +111,8 @@ class ApiService {
   // Create a new comparison
   Future<Response> createComparison(Map<String, dynamic> comparisonData) async {
     try {
-      final response = await _dio.post("/comparisons", data: comparisonData); // POST request
+      final response =
+          await _dio.post("/comparisons", data: comparisonData); // POST request
       return response;
     } catch (e) {
       throw Exception("Failed to create comparison"); // Handle errors
@@ -112,7 +132,8 @@ class ApiService {
   // Get comparison details by ID
   Future<Response> getComparisonDetails(int comparisonId) async {
     try {
-      final response = await _dio.get("/comparisons/$comparisonId"); // GET request
+      final response =
+          await _dio.get("/comparisons/$comparisonId"); // GET request
       return response;
     } catch (e) {
       throw Exception("Failed to load comparison details"); // Handle errors
@@ -120,21 +141,26 @@ class ApiService {
   }
 
   // Get sorted comparison details by attribute
-  Future<Response> getSortedComparisonDetails(int comparisonId, String sortBy) async {
+  Future<Response> getSortedComparisonDetails(
+      int comparisonId, String sortBy) async {
     try {
       final response = await _dio.get(
         "/comparisons/$comparisonId",
-        queryParameters: {"sort_by": sortBy}, // Pass sorting attribute as a query parameter
+        queryParameters: {
+          "sort_by": sortBy
+        }, // Pass sorting attribute as a query parameter
       );
       return response;
     } catch (e) {
-      throw Exception("Failed to load sorted comparison details"); // Handle errors
+      throw Exception(
+          "Failed to load sorted comparison details"); // Handle errors
     }
   }
 
   // Caching API responses using SharedPreferences
   Future<Response> getCachedData(String endpoint) async {
-    final prefs = await SharedPreferences.getInstance(); // Get SharedPreferences instance
+    final prefs =
+        await SharedPreferences.getInstance(); // Get SharedPreferences instance
     String? cachedData = prefs.getString(endpoint); // Retrieve cached data
 
     if (cachedData != null) {
