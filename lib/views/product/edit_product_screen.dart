@@ -32,43 +32,55 @@ class _EditProductScreenState extends State<EditProductScreen> {
   String? imageBase64;
   File? _selectedImage;
   List<Map<String, dynamic>> attributes = [];
+  List<TextEditingController> valueControllers = [];
+  List<TextEditingController> scoreControllers = [];
 
   @override
   void initState() {
     super.initState();
 
-    nameController = TextEditingController(text: widget.initialProductData["name"] ?? "");
-    brandController = TextEditingController(text: widget.initialProductData["brand"] ?? "");
-    priceController = TextEditingController(text: widget.initialProductData["price"]?.toString() ?? "0.0");
-    totalScoreController = TextEditingController(text: widget.initialProductData["score"]?.toString() ?? "0.0");
+    nameController =
+        TextEditingController(text: widget.initialProductData["name"] ?? "");
+    brandController =
+        TextEditingController(text: widget.initialProductData["brand"] ?? "");
+    priceController = TextEditingController(
+        text: widget.initialProductData["price"]?.toString() ?? "0.0");
+    totalScoreController = TextEditingController(
+        text: widget.initialProductData["score"]?.toString() ?? "0.0");
 
     imageBase64 = widget.initialProductData["image_base64"];
 
-    attributes = (widget.initialProductData["product_metadata"] as List<dynamic>?)
-        ?.map((attr) => {
-      "attribute": attr["attribute"] ?? "Unknown",
-      "value": attr["value"] ?? "",
-      "score": attr["score"] != null ? attr["score"].toDouble() : 0.0,
-    })
-        .toList() ??
-        [];
-  }
+    // Initialize attributes and controllers
+    attributes =
+        (widget.initialProductData["product_metadata"] as List<dynamic>?)
+            ?.map((attr) =>
+        {
+          "attribute": attr["attribute"] ?? "Unknown",
+          "value": attr["value"] ?? "",
+          "score": attr["score"] != null ? attr["score"].toDouble() : 0.0,
+        })
+            .toList() ??
+            [];
 
-  String sanitizeBase64(String base64String) {
-    final regex = RegExp(r'data:image/[^;]+;base64,');
-    return base64String.replaceAll(regex, '');
+    valueControllers = attributes.map((attr) =>
+        TextEditingController(text: attr["value"].toString())).toList();
+    scoreControllers = attributes.map((attr) =>
+        TextEditingController(text: attr["score"].toString())).toList();
   }
-
   Future<void> pickImage(ImageSource source) async {
     final ImagePicker picker = ImagePicker();
     final XFile? image = await picker.pickImage(source: source);
 
     if (image != null) {
       final bytes = await image.readAsBytes();
+      final String base64String = base64Encode(bytes);
+
       setState(() {
         _selectedImage = File(image.path);
-        imageBase64 = base64Encode(bytes);
+        imageBase64 = "data:image/png;base64,$base64String"; // Add correct prefix
       });
+
+      print("Base64 Encoded Image: $imageBase64"); // Debugging output
     }
   }
 
@@ -84,7 +96,8 @@ class _EditProductScreenState extends State<EditProductScreen> {
       final double? price = double.tryParse(priceController.text);
       final double? totalScore = double.tryParse(totalScoreController.text);
 
-      if (price == null || totalScore == null || totalScore < 0 || totalScore > 5) {
+      if (price == null || totalScore == null || totalScore < 0 ||
+          totalScore > 5) {
         setState(() {
           errorMessage = "Invalid price or total score (0-5)";
           isLoading = false;
@@ -92,21 +105,20 @@ class _EditProductScreenState extends State<EditProductScreen> {
         return;
       }
 
-      List<Map<String, dynamic>> formattedAttributes = attributes.map((attr) {
-        return {
-          "attribute": attr["attribute"],
-          "value": attr["value"] ?? "",
-          "score": (attr["score"] as num).clamp(0, 5).toDouble(),
-        };
-      }).toList();
+      // Update attributes list with user input
+      for (int i = 0; i < attributes.length; i++) {
+        attributes[i]["value"] = valueControllers[i].text;
+        attributes[i]["score"] =
+            double.tryParse(scoreControllers[i].text) ?? 0.0;
+      }
 
       final Map<String, dynamic> updatedProductData = {
         "name": nameController.text,
         "brand": brandController.text,
-        "price": price,
-        "score": totalScore,
+        "price": priceController.text,
+        "score": totalScoreController.text,
         "image_base64": imageBase64,
-        "product_metadata": formattedAttributes,
+        "product_metadata": attributes,
       };
 
       await apiService.updateProduct(widget.productId, updatedProductData);
@@ -122,6 +134,7 @@ class _EditProductScreenState extends State<EditProductScreen> {
       isLoading = false;
     });
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -145,32 +158,35 @@ class _EditProductScreenState extends State<EditProductScreen> {
                     padding: const EdgeInsets.only(bottom: 10),
                     child: Text(
                       errorMessage!,
-                      style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+                      style: const TextStyle(
+                          color: Colors.red, fontWeight: FontWeight.bold),
                     ),
                   ),
 
-                // ✅ General Data Section
+                // General Data Section
                 _buildSection(
                   title: "General Data",
                   children: [
                     _buildTextField("Product Name", nameController),
                     _buildTextField("Brand", brandController),
                     _buildTextField("Price", priceController, isNumeric: true),
-                    _buildTextField("Total Score (0-5)", totalScoreController, isNumeric: true),
+                    _buildTextField("Total Score (0-5)", totalScoreController,
+                        isNumeric: true),
                   ],
                 ),
 
                 const SizedBox(height: 20),
 
-                // ✅ Image Section
+                // Image Section
                 _buildSection(
                   title: "Product Image",
                   children: [
                     _selectedImage != null
                         ? Image.file(_selectedImage!, height: 200)
                         : (imageBase64 != null && imageBase64!.isNotEmpty)
-                        ? Image.memory(base64Decode(sanitizeBase64(imageBase64!)), height: 200)
+                        ? Image.memory(base64Decode(imageBase64!.split(',').last), height: 200)
                         : const Icon(Icons.image, size: 100, color: Colors.blue),
+
                     const SizedBox(height: 10),
                     Row(
                       children: [
@@ -196,29 +212,33 @@ class _EditProductScreenState extends State<EditProductScreen> {
 
                 const SizedBox(height: 20),
 
-                // ✅ Attributes Section
+                // Attributes Section
                 if (attributes.isNotEmpty)
                   _buildSection(
                     title: "Attributes",
-                    children: attributes.map((attr) {
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(attr["attribute"],
-                              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500, color: Colors.blue)),
-                          _buildTextField("Value", TextEditingController(text: attr["value"])),
-                          _buildTextField("Score (0-5)", TextEditingController(text: attr["score"].toString()), isNumeric: true),
-                          const SizedBox(height: 15),
-                        ],
-                      );
-                    }).toList(),
+                    children: List.generate(attributes.length, (i) =>
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(attributes[i]["attribute"],
+                                style: const TextStyle(fontSize: 16,
+                                    fontWeight: FontWeight.w500,
+                                    color: Colors.blue)),
+                            const SizedBox(height: 5),
+                            _buildTextField("Value", valueControllers[i]),
+                            _buildTextField("Score (0-5)", scoreControllers[i],
+                                isNumeric: true),
+                            const SizedBox(height: 15),
+                          ],
+                        )),
                   ),
 
                 const SizedBox(height: 20),
 
                 ElevatedButton(
                   onPressed: updateProduct,
-                  child: isLoading ? const CircularProgressIndicator(color: Colors.white) : const Text("Update Product"),
+                  child: isLoading ? const CircularProgressIndicator(
+                      color: Colors.white) : const Text("Update Product"),
                 ),
               ],
             ),
@@ -228,7 +248,8 @@ class _EditProductScreenState extends State<EditProductScreen> {
     );
   }
 
-  Widget _buildSection({required String title, required List<Widget> children}) {
+  Widget _buildSection(
+      {required String title, required List<Widget> children}) {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -239,7 +260,8 @@ class _EditProductScreenState extends State<EditProductScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.blue)),
+          Text(title, style: const TextStyle(
+              fontSize: 18, fontWeight: FontWeight.bold, color: Colors.blue)),
           const Divider(color: Colors.blue),
           ...children,
         ],
@@ -247,12 +269,14 @@ class _EditProductScreenState extends State<EditProductScreen> {
     );
   }
 
-  Widget _buildTextField(String label, TextEditingController controller, {bool isNumeric = false}) {
+  Widget _buildTextField(String label, TextEditingController controller,
+      {bool isNumeric = false}) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: TextFormField(
         controller: controller,
-        decoration: InputDecoration(labelText: label, border: OutlineInputBorder()),
+        decoration: InputDecoration(
+            labelText: label, border: OutlineInputBorder()),
         keyboardType: isNumeric ? TextInputType.number : TextInputType.text,
       ),
     );
