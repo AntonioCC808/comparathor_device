@@ -108,7 +108,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
 
       Response response = await apiService.addProduct(productData);
 
-      Navigator.pop(context, response.data);
+      Navigator.pop(context, true);
     } catch (e) {
       setState(() {
         errorMessage = "Failed to add product";

@@ -65,7 +65,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
     if (confirmDelete) {
       try {
         await apiService.deleteProduct(widget.productId);
-        Navigator.pop(context, true); // ✅ Ensure it sends `true` back after deletion
+        Navigator.pop(context, true); // Ensure it sends `true` back after deletion
       } catch (e) {
         setState(() => errorMessage = "Failed to delete product");
       }
