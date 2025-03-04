@@ -1,12 +1,10 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:comparathor_device/providers/product_provider.dart';
 import 'package:comparathor_device/views/product/product_detail_screen.dart';
 import 'package:comparathor_device/views/product/add_product_screen.dart';
-import 'package:comparathor_device/views/product/edit_product_screen.dart';
 import 'package:comparathor_device/core/api_service.dart';
 
 class ProductListScreen extends ConsumerStatefulWidget {
@@ -24,37 +22,6 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
     return base64String.replaceAll(regex, '');
   }
 
-  void deleteProduct(BuildContext context, WidgetRef ref, int productId) async {
-    bool confirmDelete = await showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text("Delete Product"),
-        content: const Text("Are you sure you want to delete this product?"),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text("Cancel"),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text("Delete", style: TextStyle(color: Colors.red)),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmDelete) {
-      try {
-        await apiService.deleteProduct(productId);
-        ref.invalidate(productProvider);
-      } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Failed to delete product")),
-        );
-      }
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final productAsyncValue = ref.watch(productProvider);
@@ -62,17 +29,7 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.blue,
-        title: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            SvgPicture.asset(
-              "assets/images/app-logo.svg",
-              height: 30,
-            ),
-            const SizedBox(width: 10),
-            const Text("Products", style: TextStyle(color: Colors.white)),
-          ],
-        ),
+        title: const Text("Products", style: TextStyle(color: Colors.white)),
         actions: [
           IconButton(
             icon: const Icon(Icons.home, color: Colors.white),
@@ -84,11 +41,12 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
               final result = await Navigator.push(
                 context,
                 MaterialPageRoute(
-                    builder: (context) => const AddProductScreen()),
+                  builder: (context) => const AddProductScreen(),
+                ),
               );
 
-              if (result != null) {
-                ref.invalidate(productProvider);
+              if (result == true) {
+                ref.invalidate(productProvider); // ✅ Refresh product list after adding
               }
             },
           ),
@@ -109,14 +67,18 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
               final product = products[index];
 
               return GestureDetector(
-                onTap: () {
-                  Navigator.push(
+                onTap: () async {
+                  bool? updatedOrDeleted = await Navigator.push(
                     context,
                     MaterialPageRoute(
                       builder: (context) =>
                           ProductDetailScreen(productId: product["id"]),
                     ),
                   );
+
+                  if (updatedOrDeleted == true) {
+                    ref.invalidate(productProvider); // ✅ Refresh list after edit/delete
+                  }
                 },
                 child: Card(
                   elevation: 4,
@@ -133,8 +95,7 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
                           child: product["image_base64"] != null &&
                               product["image_base64"].isNotEmpty
                               ? Image.memory(
-                            base64Decode(
-                                sanitizeBase64(product["image_base64"])),
+                            base64Decode(sanitizeBase64(product["image_base64"])),
                             width: double.infinity,
                             fit: BoxFit.contain,
                             errorBuilder: (context, error, stackTrace) {
@@ -168,7 +129,7 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
                             ),
                             const SizedBox(height: 5),
                             RatingBarIndicator(
-                              rating: product["score"].toDouble(),
+                              rating: (product["score"] as num).toDouble(),
                               itemBuilder: (context, index) => const Icon(
                                 Icons.star,
                                 color: Colors.amber,
@@ -198,8 +159,7 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
           ),
         ),
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stack) =>
-        const Center(child: Text("Failed to load products")),
+        error: (error, stack) => const Center(child: Text("Failed to load products")),
       ),
     );
   }

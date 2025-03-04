@@ -1,12 +1,19 @@
+import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:dio/dio.dart';
 import 'package:comparathor_device/core/api_service.dart';
 
 class EditProductScreen extends StatefulWidget {
   final int productId;
   final Map<String, dynamic> initialProductData;
 
-  const EditProductScreen(
-      {super.key, required this.productId, required this.initialProductData});
+  const EditProductScreen({
+    super.key,
+    required this.productId,
+    required this.initialProductData,
+  });
 
   @override
   _EditProductScreenState createState() => _EditProductScreenState();
@@ -16,24 +23,53 @@ class _EditProductScreenState extends State<EditProductScreen> {
   late TextEditingController nameController;
   late TextEditingController brandController;
   late TextEditingController priceController;
-  late TextEditingController scoreController;
+  late TextEditingController totalScoreController;
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final ApiService apiService = ApiService();
 
   bool isLoading = false;
   String? errorMessage;
+  String? imageBase64;
+  File? _selectedImage;
+  List<Map<String, dynamic>> attributes = [];
 
   @override
   void initState() {
     super.initState();
-    nameController =
-        TextEditingController(text: widget.initialProductData["name"]);
-    brandController =
-        TextEditingController(text: widget.initialProductData["brand"]);
-    priceController = TextEditingController(
-        text: widget.initialProductData["price"].toString());
-    scoreController = TextEditingController(
-        text: widget.initialProductData["score"].toString());
+
+    nameController = TextEditingController(text: widget.initialProductData["name"] ?? "");
+    brandController = TextEditingController(text: widget.initialProductData["brand"] ?? "");
+    priceController = TextEditingController(text: widget.initialProductData["price"]?.toString() ?? "0.0");
+    totalScoreController = TextEditingController(text: widget.initialProductData["score"]?.toString() ?? "0.0");
+
+    imageBase64 = widget.initialProductData["image_base64"];
+
+    attributes = (widget.initialProductData["product_metadata"] as List<dynamic>?)
+        ?.map((attr) => {
+      "attribute": attr["attribute"] ?? "Unknown",
+      "value": attr["value"] ?? "",
+      "score": attr["score"] != null ? attr["score"].toDouble() : 0.0,
+    })
+        .toList() ??
+        [];
+  }
+
+  String sanitizeBase64(String base64String) {
+    final regex = RegExp(r'data:image/[^;]+;base64,');
+    return base64String.replaceAll(regex, '');
+  }
+
+  Future<void> pickImage(ImageSource source) async {
+    final ImagePicker picker = ImagePicker();
+    final XFile? image = await picker.pickImage(source: source);
+
+    if (image != null) {
+      final bytes = await image.readAsBytes();
+      setState(() {
+        _selectedImage = File(image.path);
+        imageBase64 = base64Encode(bytes);
+      });
+    }
   }
 
   void updateProduct() async {
@@ -45,12 +81,35 @@ class _EditProductScreenState extends State<EditProductScreen> {
     });
 
     try {
-      await apiService.updateProduct(widget.productId, {
+      final double? price = double.tryParse(priceController.text);
+      final double? totalScore = double.tryParse(totalScoreController.text);
+
+      if (price == null || totalScore == null || totalScore < 0 || totalScore > 5) {
+        setState(() {
+          errorMessage = "Invalid price or total score (0-5)";
+          isLoading = false;
+        });
+        return;
+      }
+
+      List<Map<String, dynamic>> formattedAttributes = attributes.map((attr) {
+        return {
+          "attribute": attr["attribute"],
+          "value": attr["value"] ?? "",
+          "score": (attr["score"] as num).clamp(0, 5).toDouble(),
+        };
+      }).toList();
+
+      final Map<String, dynamic> updatedProductData = {
         "name": nameController.text,
         "brand": brandController.text,
-        "price": double.parse(priceController.text),
-        "score": double.parse(scoreController.text),
-      });
+        "price": price,
+        "score": totalScore,
+        "image_base64": imageBase64,
+        "product_metadata": formattedAttributes,
+      };
+
+      await apiService.updateProduct(widget.productId, updatedProductData);
 
       Navigator.pop(context, true);
     } catch (e) {
@@ -67,46 +126,134 @@ class _EditProductScreenState extends State<EditProductScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text("Edit Product")),
+      backgroundColor: Colors.white,
+      appBar: AppBar(
+        title: const Text("Edit Product"),
+        backgroundColor: Colors.blue,
+        foregroundColor: Colors.white,
+      ),
       body: Padding(
-        padding: EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(16.0),
         child: Form(
           key: _formKey,
-          child: Column(
-            children: [
-              if (errorMessage != null)
-                Text(errorMessage!, style: TextStyle(color: Colors.red)),
-              TextFormField(
-                controller: nameController,
-                decoration: InputDecoration(labelText: "Product Name"),
-                validator: (value) =>
-                    value!.isEmpty ? "Enter product name" : null,
-              ),
-              TextFormField(
-                controller: brandController,
-                decoration: InputDecoration(labelText: "Brand"),
-                validator: (value) => value!.isEmpty ? "Enter brand" : null,
-              ),
-              TextFormField(
-                controller: priceController,
-                decoration: InputDecoration(labelText: "Price"),
-                keyboardType: TextInputType.number,
-                validator: (value) => value!.isEmpty ? "Enter price" : null,
-              ),
-              TextFormField(
-                controller: scoreController,
-                decoration: InputDecoration(labelText: "Score (0-5)"),
-                keyboardType: TextInputType.number,
-                validator: (value) => value!.isEmpty ? "Enter score" : null,
-              ),
-              SizedBox(height: 20),
-              isLoading
-                  ? CircularProgressIndicator()
-                  : ElevatedButton(
-                      onPressed: updateProduct, child: Text("Update Product")),
-            ],
+          child: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (errorMessage != null)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 10),
+                    child: Text(
+                      errorMessage!,
+                      style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+
+                // ✅ General Data Section
+                _buildSection(
+                  title: "General Data",
+                  children: [
+                    _buildTextField("Product Name", nameController),
+                    _buildTextField("Brand", brandController),
+                    _buildTextField("Price", priceController, isNumeric: true),
+                    _buildTextField("Total Score (0-5)", totalScoreController, isNumeric: true),
+                  ],
+                ),
+
+                const SizedBox(height: 20),
+
+                // ✅ Image Section
+                _buildSection(
+                  title: "Product Image",
+                  children: [
+                    _selectedImage != null
+                        ? Image.file(_selectedImage!, height: 200)
+                        : (imageBase64 != null && imageBase64!.isNotEmpty)
+                        ? Image.memory(base64Decode(sanitizeBase64(imageBase64!)), height: 200)
+                        : const Icon(Icons.image, size: 100, color: Colors.blue),
+                    const SizedBox(height: 10),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            icon: const Icon(Icons.camera_alt),
+                            label: const Text("Take Photo"),
+                            onPressed: () => pickImage(ImageSource.camera),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            icon: const Icon(Icons.photo_library),
+                            label: const Text("Upload Image"),
+                            onPressed: () => pickImage(ImageSource.gallery),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 20),
+
+                // ✅ Attributes Section
+                if (attributes.isNotEmpty)
+                  _buildSection(
+                    title: "Attributes",
+                    children: attributes.map((attr) {
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(attr["attribute"],
+                              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500, color: Colors.blue)),
+                          _buildTextField("Value", TextEditingController(text: attr["value"])),
+                          _buildTextField("Score (0-5)", TextEditingController(text: attr["score"].toString()), isNumeric: true),
+                          const SizedBox(height: 15),
+                        ],
+                      );
+                    }).toList(),
+                  ),
+
+                const SizedBox(height: 20),
+
+                ElevatedButton(
+                  onPressed: updateProduct,
+                  child: isLoading ? const CircularProgressIndicator(color: Colors.white) : const Text("Update Product"),
+                ),
+              ],
+            ),
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildSection({required String title, required List<Widget> children}) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: Colors.blue, width: 1),
+      ),
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.blue)),
+          const Divider(color: Colors.blue),
+          ...children,
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTextField(String label, TextEditingController controller, {bool isNumeric = false}) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: TextFormField(
+        controller: controller,
+        decoration: InputDecoration(labelText: label, border: OutlineInputBorder()),
+        keyboardType: isNumeric ? TextInputType.number : TextInputType.text,
       ),
     );
   }

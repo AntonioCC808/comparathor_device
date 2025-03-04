@@ -77,8 +77,20 @@ class ApiService {
   // Add a new product
   Future<Response> addProduct(Map<String, dynamic> productData) async {
     try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('auth_token');
+
+      if (token == null) {
+        throw Exception("No authentication token found");
+      }
       final response =
-          await _dio.post("/products", data: productData); // POST request
+          await _dio.post("/products/",
+              data: productData,
+              options: Options(headers: {
+                "Authorization": "Bearer $token",
+                "Content-Type": "application/json",
+              })
+          ); // POST request
       return response;
     } catch (e) {
       throw Exception("Failed to add product"); // Handle errors
@@ -89,8 +101,21 @@ class ApiService {
   Future<Response> updateProduct(
       int productId, Map<String, dynamic> productData) async {
     try {
-      final response = await _dio.put("/products/$productId",
-          data: productData); // PUT request
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('auth_token');
+
+      if (token == null) {
+        throw Exception("No authentication token found");
+      }
+
+      final response = await _dio.put(
+          "/products/$productId",
+          data: productData,
+          options: Options(headers: {
+            "Authorization": "Bearer $token",
+            "Content-Type": "application/json",
+          })
+      ); // PUT request
       return response;
     } catch (e) {
       throw Exception("Failed to update product"); // Handle errors
@@ -100,8 +125,20 @@ class ApiService {
   // Delete product by ID
   Future<Response> deleteProduct(int productId) async {
     try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('auth_token');
+
+      if (token == null) {
+        throw Exception("No authentication token found");
+      }
       final response =
-          await _dio.delete("/products/$productId"); // DELETE request
+          await _dio.delete(
+              "/products/$productId",
+              options: Options(headers: {
+                "Authorization": "Bearer $token",
+                "Content-Type": "application/json",
+              })
+          ); // DELETE request
       return response;
     } catch (e) {
       throw Exception("Failed to delete product"); // Handle errors
