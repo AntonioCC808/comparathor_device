@@ -4,11 +4,12 @@ import 'package:comparathor_device/views/product/product_list_screen.dart';
 import 'package:comparathor_device/views/product/add_product_screen.dart';
 import 'package:comparathor_device/views/comparison/comparison_list_screen.dart';
 import 'package:comparathor_device/views/comparison/select_products_screen.dart';
-import 'package:comparathor_device/views/auth/login_screen.dart';
 import 'package:comparathor_device/views/home/settings_screen.dart';
 
 class HomeScreen extends StatelessWidget {
-  const HomeScreen({super.key});
+  final VoidCallback logoutCallback; // 🔹 Logout callback
+
+  const HomeScreen({super.key, required this.logoutCallback});
 
   @override
   Widget build(BuildContext context) {
@@ -35,13 +36,7 @@ class HomeScreen extends StatelessWidget {
           ),
           IconButton(
             icon: const Icon(Icons.logout, color: Colors.white),
-            onPressed: () {
-              Navigator.pushAndRemoveUntil(
-                context,
-                MaterialPageRoute(builder: (context) => const LoginScreen()),
-                    (route) => false,
-              );
-            },
+            onPressed: logoutCallback, // ✅ Uses the logout function
           ),
         ],
       ),

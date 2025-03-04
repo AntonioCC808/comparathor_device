@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart'; // ✅ Import Riverpod
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:shared_preferences/shared_preferences.dart'; // ✅ Import SharedPreferences
 import 'package:comparathor_device/core/api_service.dart';
 import 'package:comparathor_device/views/auth/login_screen.dart';
 import 'package:comparathor_device/views/auth/register_screen.dart';
@@ -24,12 +25,36 @@ void main() async {
   );
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
 
-  Future<bool> checkIfLoggedIn() async {
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  bool isLoggedIn = false;
+
+  @override
+  void initState() {
+    super.initState();
+    checkIfLoggedIn();
+  }
+
+  /// Check if the user is logged in by verifying the stored token.
+  Future<void> checkIfLoggedIn() async {
     String? token = await ApiService().getToken();
-    return token != null; // Returns true if logged in, false otherwise
+    setState(() {
+      isLoggedIn = token != null;
+    });
+  }
+
+  /// Logout function to remove token and update UI state.
+  Future<void> logout() async {
+    await ApiService().logout();
+    setState(() {
+      isLoggedIn = false; // Ensure UI updates after logout
+    });
   }
 
   @override
@@ -37,26 +62,11 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Comparathor Device',
       theme: ThemeData(primarySwatch: Colors.blue),
-      home: FutureBuilder<bool>(
-        future: checkIfLoggedIn(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Scaffold(
-              body: Center(child: CircularProgressIndicator()), // Show loading spinner while checking
-            );
-          }
-
-          if (snapshot.hasError || !snapshot.hasData || !snapshot.data!) {
-            return const LoginScreen(); // If error or not logged in, show login
-          }
-
-          return const HomeScreen(); // If token exists, go to home
-        },
-      ),
+      home: isLoggedIn ? HomeScreen(logoutCallback: logout) : const LoginScreen(),
       routes: {
         '/login': (context) => const LoginScreen(),
         '/register': (context) => const RegisterScreen(),
-        '/home': (context) => const HomeScreen(),
+        '/home': (context) => HomeScreen(logoutCallback: logout),
         '/products': (context) => const ProductListScreen(),
         '/add-product': (context) => const AddProductScreen(),
         '/comparisons': (context) => const ComparisonListScreen(),

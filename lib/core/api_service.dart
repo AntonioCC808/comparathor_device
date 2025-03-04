@@ -48,9 +48,8 @@ class ApiService {
 
   // Logout: Remove authentication token from storage
   Future<void> logout() async {
-    final prefs =
-        await SharedPreferences.getInstance(); // Get SharedPreferences instance
-    await prefs.remove('auth_token'); // Remove token
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('auth_token'); // Clears the token on logout
   }
 
   // Fetch product details by ID
