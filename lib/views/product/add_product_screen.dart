@@ -55,12 +55,17 @@ class _AddProductScreenState extends State<AddProductScreen> {
 
     if (image != null) {
       final bytes = await image.readAsBytes();
+      final String base64String = base64Encode(bytes);
+
       setState(() {
         _selectedImage = File(image.path);
-        imageBase64 = base64Encode(bytes);
+        imageBase64 = "data:image/png;base64,$base64String";  // ✅ Add prefix
       });
+
+      print("Base64 Encoded Image: $imageBase64");  // Debugging output
     }
   }
+
 
   void addProduct() async {
     if (!_formKey.currentState!.validate()) return;
@@ -331,7 +336,10 @@ class _AddProductScreenState extends State<AddProductScreen> {
 
                       _selectedImage != null
                           ? Image.file(_selectedImage!, height: 200)
+                          : (imageBase64 != null && imageBase64!.isNotEmpty)
+                          ? Image.memory(base64Decode(imageBase64!.split(',').last), height: 200)  // ✅ Extracts actual base64 data
                           : const Text("No image selected", style: TextStyle(color: Colors.blue)),
+
 
                       const SizedBox(height: 10),
                       Row(
