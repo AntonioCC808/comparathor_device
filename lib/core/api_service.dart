@@ -7,8 +7,8 @@ class ApiService {
   // Initialize Dio instance with base URL from environment variables
   final Dio _dio = Dio(BaseOptions(
     baseUrl: dotenv.env['API_BASE_URL'] != null
-        ? "${dotenv.env['API_BASE_URL']}/api/v1" // If API_BASE_URL is set, use it
-        : 'http://localhost:8000/api/v1', // Default to localhost if no env variable is found
+        ? "${dotenv.env['API_BASE_URL']}/api/" // If API_BASE_URL is set, use it
+        : 'http://localhost:8000/api', // Default to localhost if no env variable is found
   ));
 
   // Generic POST request
@@ -82,14 +82,12 @@ class ApiService {
       if (token == null) {
         throw Exception("No authentication token found");
       }
-      final response =
-          await _dio.post("/products/",
-              data: productData,
-              options: Options(headers: {
-                "Authorization": "Bearer $token",
-                "Content-Type": "application/json",
-              })
-          ); // POST request
+      final response = await _dio.post("/products/",
+          data: productData,
+          options: Options(headers: {
+            "Authorization": "Bearer $token",
+            "Content-Type": "application/json",
+          })); // POST request
       return response;
     } catch (e) {
       throw Exception("Failed to add product"); // Handle errors
@@ -107,14 +105,12 @@ class ApiService {
         throw Exception("No authentication token found");
       }
 
-      final response = await _dio.put(
-          "/products/$productId",
+      final response = await _dio.put("/products/$productId",
           data: productData,
           options: Options(headers: {
             "Authorization": "Bearer $token",
             "Content-Type": "application/json",
-          })
-      ); // PUT request
+          })); // PUT request
       return response;
     } catch (e) {
       throw Exception("Failed to update product"); // Handle errors
@@ -130,14 +126,11 @@ class ApiService {
       if (token == null) {
         throw Exception("No authentication token found");
       }
-      final response =
-          await _dio.delete(
-              "/products/$productId",
-              options: Options(headers: {
-                "Authorization": "Bearer $token",
-                "Content-Type": "application/json",
-              })
-          ); // DELETE request
+      final response = await _dio.delete("/products/$productId",
+          options: Options(headers: {
+            "Authorization": "Bearer $token",
+            "Content-Type": "application/json",
+          })); // DELETE request
       return response;
     } catch (e) {
       throw Exception("Failed to delete product"); // Handle errors
@@ -168,6 +161,7 @@ class ApiService {
       throw Exception("Failed to create comparison: ${e.toString()}");
     }
   }
+
   Future<void> deleteComparison(int comparisonId) async {
     try {
       final prefs = await SharedPreferences.getInstance();
